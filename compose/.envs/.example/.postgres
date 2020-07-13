@@ -1,0 +1,5 @@
+# PostgreSQL
+# ------------------------------------------------------------------------------
+POSTGRES_DB=goldfish
+POSTGRES_USER=goldfish
+POSTGRES_PASSWORD=123456

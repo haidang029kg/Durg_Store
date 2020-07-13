@@ -1,0 +1,17 @@
+Django==3.0.4
+django-environ==0.4.5
+pytz==2019.3
+django-model-utils==4.0.0
+drf-yasg==1.17.1
+djangorestframework==3.11.0
+
+# Postgres Adapter
+psycopg2-binary==2.8.4
+
+django-cors-headers==3.2.1
+
+django-bulk-sync==2.1.0
+
+# Static files
+whitenoise  # https://github.com/evansd/whitenoise
+
