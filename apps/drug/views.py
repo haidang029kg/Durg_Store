@@ -1,25 +1,25 @@
 from datetime import datetime
 
+from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 from apps.common.exceptions import InvalidFilterException
 from apps.drug.models import Drug, Category, Pharmacy, Prescription, PrescriptionDetail
 from apps.drug.serializers import (DrugSerializers, DrugCategorySerializer, PharmacySerializer, PrescriptionSerializer,
                                    PrescriptionDetailSerializer)
-from apps.drug.services.StatisticServices import StatisticServices
+from apps.drug.services.search import PostgresFulltextSearch, CONFIG_PRESCRIPTION_RANK, CONFIG_DRUG_RANK
+
+
 # Create your views here.
-from apps.drug.services.search_service import PostgresFulltextSearch
 
 
 class ListCreateDrugView(generics.ListCreateAPIView):
     queryset = Drug.objects.all()
     serializer_class = DrugSerializers
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
 
     keyword = openapi.Parameter('keyword', in_=openapi.IN_QUERY,
                                 description="""Search by name, condition""",
@@ -48,8 +48,9 @@ class ListCreateDrugView(generics.ListCreateAPIView):
 
         keyword = self.request.query_params.get('keyword', None)
         if keyword:
-            search_handler = PostgresFulltextSearch(query_set)
-            return search_handler.search(keyword)
+            q_list = [Q(key__icontains=keyword), Q(name__icontains=keyword)]
+            search_handler = PostgresFulltextSearch(query_set, CONFIG_DRUG_RANK)
+            return search_handler.search(keyword, q_list)
 
         return query_set.order_by('-modified')
 
@@ -61,36 +62,66 @@ class ListCreateDrugView(generics.ListCreateAPIView):
 class RetrieveDrugView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = DrugSerializers
     queryset = Drug.objects.all()
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
 
 
 class ListCreateDrugCategoriesView(generics.ListCreateAPIView):
     serializer_class = DrugCategorySerializer
     queryset = Category.objects.all().order_by('name')
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
+
+    keyword = openapi.Parameter('keyword', in_=openapi.IN_QUERY,
+                                description="""Search by name""",
+                                type=openapi.TYPE_STRING)
+
+    @swagger_auto_schema(operation_description='Get list categories', manual_parameters=[keyword])
+    def get(self, request, *args, **kwargs):
+        return super(ListCreateDrugCategoriesView, self).get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        keyword = self.request.query_params.get('keyword', None)
+
+        if keyword:
+            return Category.objects.filter(name__icontains=keyword).order_by('-created')
+        return Category.objects.all().order_by('-created')
 
 
 class RetrieveUpdateCategoryView(generics.RetrieveUpdateAPIView):
     serializer_class = DrugCategorySerializer
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
     queryset = Category.objects.all()
 
 
 class ListCreatePharmaciesView(generics.ListCreateAPIView):
     serializer_class = PharmacySerializer
-    queryset = Pharmacy.objects.all().order_by('name')
-    permission_classes = (AllowAny,)
+    queryset = Pharmacy.objects.all().order_by('-created')
+    permission_classes = (IsAuthenticated,)
+
+    keyword = openapi.Parameter('keyword', in_=openapi.IN_QUERY,
+                                description="""Search by name""",
+                                type=openapi.TYPE_STRING)
+
+    @swagger_auto_schema(operation_description='Get list pharmacies', manual_parameters=[keyword])
+    def get(self, request, *args, **kwargs):
+        return super(ListCreatePharmaciesView, self).get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        keyword = self.request.query_params.get('keyword', None)
+
+        if keyword:
+            return Pharmacy.objects.filter(name__icontains=keyword).order_by('-created')
+        return Pharmacy.objects.all().order_by('-created')
 
 
 class RetrieveUpdatePharmacyView(generics.RetrieveUpdateAPIView):
     serializer_class = PharmacySerializer
     queryset = Pharmacy.objects.all()
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
 
 
 class ListCreatePrescriptionView(generics.ListCreateAPIView):
     serializer_class = PrescriptionSerializer
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
     queryset = Prescription.objects.all().order_by('-created')
 
     date = openapi.Parameter('date', in_=openapi.IN_QUERY,
@@ -114,47 +145,39 @@ class ListCreatePrescriptionView(generics.ListCreateAPIView):
         query_set = Prescription.objects
 
         if date:
-            dt = datetime.strptime(date, '%Y-%m-%d')
-            # ~Q(create__date_eq=dt)
+            dt = datetime.strptime(date, "%Y-%m-%dT%H:%M:%S.%f%z")
+
             start = dt.replace(hour=0, minute=0, second=0, microsecond=0)
             end = dt.replace(hour=23, minute=59, second=59, microsecond=999999)
             query_set = query_set.filter(
-                created__range=(start, end))
+                created__gte=start,
+                created__lte=end
+            )
 
         if keyword:
-            search_handler = PostgresFulltextSearch(query_set, 'created', [
-                {
-                    "field_name": "name",
-                    "weight": "A"
-                },
-                {
-                    "field_name": "status",
-                    "weight": "B"
-                }
-            ])
-            return search_handler.search(keyword)
+            search_handler = PostgresFulltextSearch(query_set, CONFIG_PRESCRIPTION_RANK, 'created')
+            q_list = [Q(name__icontains=keyword), Q(status__icontains=keyword)]
+            return search_handler.search(keyword, q_list)
 
-        return query_set.all()
+        return query_set.all().order_by('-created')
+
+
+class RetrievePrescriptionView(generics.RetrieveAPIView):
+    serializer_class = PrescriptionSerializer
+    permission_classes = (IsAuthenticated,)
+    queryset = Prescription.objects.all()
 
 
 class PatchPrescriptionView(generics.UpdateAPIView):
     serializer_class = PrescriptionSerializer
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
     queryset = Prescription.objects.all()
 
 
 class ListPrescriptionDetailView(generics.ListAPIView):
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = PrescriptionDetailSerializer
 
     def get_queryset(self):
         pk = self.kwargs.get('pk', None)
         return PrescriptionDetail.objects.filter(prescription__id=pk).order_by('-created')
-
-
-class AggregateDrugCategoryView(APIView):
-    permission_classes = (AllowAny,)
-
-    def get(self, request, *args, **kwargs):
-        data = StatisticServices.drug_categories()
-        return Response(data)

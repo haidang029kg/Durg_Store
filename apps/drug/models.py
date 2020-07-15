@@ -4,8 +4,10 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from model_utils.models import TimeStampedModel, SoftDeletableModel
 
+from apps.drug.config import STATUS
+
+
 # Create your models here.
-from apps.drug.config_static_variable import STATUS
 
 
 class Category(TimeStampedModel, SoftDeletableModel):
@@ -32,6 +34,7 @@ class Drug(TimeStampedModel, SoftDeletableModel):
     price = models.FloatField(default=0, validators=[
         MinValueValidator(0)
     ])
+    key = models.CharField(max_length=50, null=True, blank=True)
 
     def __str__(self):
         name = self.name if self.name else ''
@@ -56,11 +59,13 @@ class Pharmacy(TimeStampedModel, SoftDeletableModel):
 class Prescription(TimeStampedModel, SoftDeletableModel):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     pharmacy = models.ForeignKey(Pharmacy, on_delete=models.CASCADE)
-    # staff_create = models.ForeignKey(null=True)
-    # staff_last_modify = models.ForeignKey(null=True)
     status = models.CharField(max_length=11, choices=STATUS, default=STATUS[0][0])
     note = models.TextField(null=True)
     name = models.CharField(max_length=20, null=True, default=None)
+
+    total_price = models.FloatField(default=0, validators=[
+        MinValueValidator(0)
+    ])
 
 
 class PrescriptionDetail(TimeStampedModel, SoftDeletableModel):

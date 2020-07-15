@@ -1,0 +1,9 @@
+IN_PROGRESS_KEY = 'IN_PROGRESS'
+DONE_KEY = 'DONE'
+CANCELLED_KEY = 'CANCELLED'
+
+STATUS = (
+    (IN_PROGRESS_KEY, 'In Progress'),
+    (DONE_KEY, 'Done'),
+    (CANCELLED_KEY, 'Cancelled')
+)
