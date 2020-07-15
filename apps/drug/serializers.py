@@ -1,7 +1,9 @@
+from bulk_sync import bulk_sync
 from django.db.models import Q
 from rest_framework import serializers
-from bulk_sync import bulk_sync
+
 from apps.drug.models import Drug, Category, Pharmacy, Prescription, PrescriptionDetail
+from apps.drug.signals import signal_update_or_create_prescription
 
 
 # Serializers
@@ -26,17 +28,27 @@ class DrugSerializers(serializers.ModelSerializer):
 
 
 class DrugCategorySerializer(serializers.ModelSerializer):
+    ratio = serializers.SerializerMethodField()
+
     class Meta:
         model = Category
-        read_only_fields = ['created', 'updated', 'id']
+        read_only_fields = ['created', 'updated', 'id', 'ratio']
         exclude = ['is_removed']
+
+    def get_ratio(self, obj):
+        category = Drug.objects.filter(category__id=obj.id).count()
+        other = Drug.objects.filter(~Q(category__id=obj.id)).count()
+        return {
+            'category': category,
+            'other': other
+        }
 
 
 class PharmacySerializer(serializers.ModelSerializer):
     class Meta:
         model = Pharmacy
         read_only_fields = ['id']
-        exclude = ['is_removed', 'created', 'modified']
+        exclude = ['is_removed']
 
 
 class PrescriptionDetailSerializer(serializers.ModelSerializer):
@@ -63,15 +75,12 @@ class PrescriptionSerializer(serializers.ModelSerializer):
         prescription = Prescription.objects.create(**validated_data)
         list_prescription_detail_models = []
         for item in list_prescription_detail_data:
-            list_prescription_detail_models.append(PrescriptionDetail(prescription=prescription, **item))
+            list_prescription_detail_models.append(PrescriptionDetail(prescription=prescription, is_removed=False,
+                                                                      **item))
 
         filters = Q(prescription=prescription)
-        bulk_sync(
-            new_models=list_prescription_detail_models,
-            filters=filters,
-            fields=['drug', 'quantity', 'price_at_the_time'],
-            key_fields=['drug'])
-
+        self._bulk_sync(filters, list_prescription_detail_models)
+        signal_update_or_create_prescription.send(self.__class__, prescription_id=prescription.id)
         return prescription
 
     def update(self, instance, validated_data):
@@ -80,15 +89,21 @@ class PrescriptionSerializer(serializers.ModelSerializer):
             list_prescription_detail_data = validated_data.pop('list_prescription_detail')
             list_prescription_detail_models = []
             for item in list_prescription_detail_data:
-                list_prescription_detail_models.append(PrescriptionDetail(prescription=instance, **item))
-
+                list_prescription_detail_models.append(PrescriptionDetail(prescription=instance, is_removed=False,
+                                                                          **item))
             filters = Q(prescription=instance)
-            bulk_sync(
-                new_models=list_prescription_detail_models,
-                filters=filters,
-                fields=['drug', 'quantity', 'price_at_the_time'],
-                key_fields=['drug'])
-        return super(PrescriptionSerializer, self).update(instance, validated_data)
+            self._bulk_sync(filters, list_prescription_detail_models)
+
+        res = super(PrescriptionSerializer, self).update(instance, validated_data)
+        signal_update_or_create_prescription.send(self.__class__, prescription_id=instance.id)
+        return res
+
+    def _bulk_sync(self, filters, new_models):
+        bulk_sync(
+            new_models=new_models,
+            filters=filters,
+            fields=['drug', 'quantity', 'price_at_the_time', 'is_removed'],
+            key_fields=['drug'])
 
     def to_representation(self, instance):
         self.fields['pharmacy'] = PharmacySerializer(read_only=True)
