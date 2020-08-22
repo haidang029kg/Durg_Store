@@ -27,15 +27,14 @@ class Command(BaseCommand):
                 if i == 101:
                     break
                 name = row.get('drugName', None)
-                condition = row.get('condition', None)
                 rate = row.get('rating', 0)
                 rate = float(rate)
                 index_cat = randint(0, len(categories) - 1)
                 category = categories[index_cat]
                 price = randint(50000, 1000000)
-                if name is None or condition is None:
+                if name is None:
                     continue
-                objs.append(Drug(name=name, condition=condition, rate=rate, category=category, price=price))
+                objs.append(Drug(name=name, rate=rate, category=category, price=price))
 
         Drug.objects.bulk_create(objs)
         print('import drugs successfully')
