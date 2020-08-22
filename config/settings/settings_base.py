@@ -27,6 +27,8 @@ SECRET_KEY = env.str('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+FRONT_END_URI = env.str('FRONT_END_URI')
+
 # ALLOWED_HOSTS = []
 
 DJANGO_APPS = [
@@ -146,7 +148,8 @@ REST_FRAMEWORK = {
 CORS_ORIGIN_WHITELIST = [
     "http://localhost:4200",
     "http://localhost:443",
-    "http://localhost"
+    "http://localhost",
+    FRONT_END_URI
 ]
 
 # LOG
