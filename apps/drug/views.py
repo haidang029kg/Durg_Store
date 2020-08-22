@@ -180,4 +180,4 @@ class ListPrescriptionDetailView(generics.ListAPIView):
 
     def get_queryset(self):
         pk = self.kwargs.get('pk', None)
-        return PrescriptionDetail.objects.filter(prescription__id=pk).order_by('-created')
+        return PrescriptionDetail.objects.filter(prescription__id=pk).order_by('-is_available', '-created')

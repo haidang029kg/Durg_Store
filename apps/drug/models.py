@@ -72,6 +72,7 @@ class PrescriptionDetail(TimeStampedModel, SoftDeletableModel):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE)
     drug = models.ForeignKey(Drug, null=True, on_delete=models.SET_NULL)
+    is_available = models.BooleanField(default=False)
     quantity = models.IntegerField(validators=[
         MinValueValidator(1)
     ])

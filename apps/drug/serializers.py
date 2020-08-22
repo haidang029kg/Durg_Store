@@ -102,7 +102,7 @@ class PrescriptionSerializer(serializers.ModelSerializer):
         bulk_sync(
             new_models=new_models,
             filters=filters,
-            fields=['drug', 'quantity', 'price_at_the_time', 'is_removed'],
+            fields=['drug', 'quantity', 'price_at_the_time', 'is_removed', 'is_available'],
             key_fields=['drug'])
 
     def to_representation(self, instance):
