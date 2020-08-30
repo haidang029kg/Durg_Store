@@ -18,6 +18,7 @@ class CalculatePrescriptionPriceRecordService:
                     table_pres_detail.price_at_the_time * table_pres_detail.quantity as total_item_price
                 FROM drug_prescriptiondetail AS table_pres_detail
                 WHERE table_pres_detail.prescription_id = '{prescription_id}'
+                    AND table_pres_detail.is_available = TRUE
             ) as sub;
         '''.format(prescription_id=prescription_id)
 
