@@ -98,7 +98,8 @@ class PrescriptionSerializer(serializers.ModelSerializer):
         signal_update_or_create_prescription.send(self.__class__, prescription_id=instance.id)
         return res
 
-    def _bulk_sync(self, filters, new_models):
+    @classmethod
+    def _bulk_sync(cls, filters, new_models: [PrescriptionDetail]):
         bulk_sync(
             new_models=new_models,
             filters=filters,

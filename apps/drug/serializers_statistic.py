@@ -1,3 +1,4 @@
+from datetime import timedelta
 from itertools import groupby
 
 from rest_framework import serializers
@@ -28,6 +29,9 @@ class PharmacyPrescriptionStatisticSerializer(serializers.ModelSerializer):
 
             from_date = ins_first.created
             to_date = ins_last.created
+
+            if type_date_bin.upper() == BIN_DAYS:
+                from_date = to_date - timedelta(days=15)
 
             stats_handler = CalculatePriceByTimeUnitForPharmacy(obj.id, type_date_bin, from_date, to_date)
             res_stats = stats_handler.run()
@@ -76,6 +80,9 @@ class PharmaciesPrescriptionStatisticSerializer(serializers.Serializer):
 
             from_date = ins_first.created
             to_date = ins_last.created
+
+            if self.validated_data.get('type') == BIN_DAYS:
+                from_date = to_date - timedelta(days=15)
 
             pharmacy_ids = Pharmacy.objects.all().values_list('id', flat=True)
             pharmacy_ids = [str(item) for item in pharmacy_ids]

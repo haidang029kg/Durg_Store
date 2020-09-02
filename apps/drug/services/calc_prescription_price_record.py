@@ -19,6 +19,7 @@ class CalculatePrescriptionPriceRecordService:
                 FROM drug_prescriptiondetail AS table_pres_detail
                 WHERE table_pres_detail.prescription_id = '{prescription_id}'
                     AND table_pres_detail.is_available = TRUE
+                    AND table_pres_detail.is_removed = FALSE
             ) as sub;
         '''.format(prescription_id=prescription_id)
 
