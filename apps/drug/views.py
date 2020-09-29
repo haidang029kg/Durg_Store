@@ -180,4 +180,21 @@ class ListPrescriptionDetailView(generics.ListAPIView):
 
     def get_queryset(self):
         pk = self.kwargs.get('pk', None)
-        return PrescriptionDetail.objects.filter(prescription__id=pk).order_by('-is_available', '-created')
+        key_sort = None
+
+        field_sort = self.request.query_params.get('active', None)
+        direction = self.request.query_params.get('direction', None)
+
+        if field_sort == 'name':
+            key_sort = 'drug__name'
+        if field_sort == 'price':
+            key_sort = 'price_at_the_time'
+        if field_sort == 'available':
+            key_sort = 'is_available'
+
+        if key_sort:
+            if direction == 'desc':
+                key_sort = f'-{key_sort}'
+            print(key_sort)
+            return PrescriptionDetail.objects.filter(prescription__id=pk).order_by(key_sort)
+        return PrescriptionDetail.objects.filter(prescription__id=pk).order_by('created')
