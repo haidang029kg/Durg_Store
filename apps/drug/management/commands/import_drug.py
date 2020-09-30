@@ -1,10 +1,10 @@
 import csv
-
 from random import randint
 
 from django.core.management.base import BaseCommand
 
 from apps.drug.models import Drug, Category
+from apps.drug.services.send_mail_excel_prescription import SendMailExcelPrescription
 
 
 class Command(BaseCommand):
@@ -75,5 +75,7 @@ class Command(BaseCommand):
         return
 
     def handle(self, *args, **options):
-        self._init_category()
-        self._create_tags()
+        han = SendMailExcelPrescription('f9ecae20-9c17-4a36-b642-657c329b451a')
+        han.exec()
+        # self._init_category()
+        # self._create_tags()

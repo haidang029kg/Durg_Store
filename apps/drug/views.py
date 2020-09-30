@@ -4,12 +4,15 @@ from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.common.exceptions import InvalidFilterException
 from apps.drug.models import Drug, Category, Pharmacy, Prescription, PrescriptionDetail
 from apps.drug.serializers import (DrugSerializers, DrugCategorySerializer, PharmacySerializer, PrescriptionSerializer,
-                                   PrescriptionDetailSerializer)
+                                   PrescriptionDetailSerializer, SendMailPrescriptionSerializer,
+                                   BulkCreateDrugSerializer)
 from apps.drug.services.search import PostgresFulltextSearch, CONFIG_PRESCRIPTION_RANK, CONFIG_DRUG_RANK
 
 
@@ -198,3 +201,24 @@ class ListPrescriptionDetailView(generics.ListAPIView):
             print(key_sort)
             return PrescriptionDetail.objects.filter(prescription__id=pk).order_by(key_sort)
         return PrescriptionDetail.objects.filter(prescription__id=pk).order_by('created')
+
+
+class BulkCreateDrugView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    @swagger_auto_schema(request_body=BulkCreateDrugSerializer)
+    def post(self, request, *args, **kwargs):
+        serializer = BulkCreateDrugSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        res = serializer.bulk_create()
+        return Response(res)
+
+
+class SendMailPrescriptionView(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        prescription_id = self.kwargs.get('pk')
+        serializer = SendMailPrescriptionSerializer(data={"prescription_id": prescription_id})
+        serializer.is_valid(raise_exception=True)
+        return Response({})

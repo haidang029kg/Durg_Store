@@ -46,6 +46,7 @@ class Pharmacy(TimeStampedModel, SoftDeletableModel):
     name = models.CharField(max_length=128)
     address = models.CharField(max_length=256)
     phone = models.CharField(max_length=12)
+    email = models.EmailField(null=True, blank=True, default=None)
 
     class Meta:
         verbose_name = 'Pharmacy'
@@ -72,7 +73,6 @@ class PrescriptionDetail(TimeStampedModel, SoftDeletableModel):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE)
     drug = models.ForeignKey(Drug, null=True, on_delete=models.SET_NULL)
-    is_available = models.BooleanField(default=False)
     quantity = models.IntegerField(validators=[
         MinValueValidator(1)
     ])

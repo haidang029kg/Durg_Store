@@ -35,7 +35,8 @@ class DrugCategorySerializer(serializers.ModelSerializer):
         read_only_fields = ['created', 'updated', 'id', 'ratio']
         exclude = ['is_removed']
 
-    def get_ratio(self, obj):
+    @classmethod
+    def get_ratio(cls, obj):
         category = Drug.objects.filter(category__id=obj.id).count()
         other = Drug.objects.filter(~Q(category__id=obj.id)).count()
         return {
@@ -109,3 +110,47 @@ class PrescriptionSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         self.fields['pharmacy'] = PharmacySerializer(read_only=True)
         return super(PrescriptionSerializer, self).to_representation(instance)
+
+
+class BulkCreateDrugSerializer(serializers.Serializer):
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
+    list_name = serializers.ListField(child=serializers.CharField())
+
+    def validate(self, attrs):
+        list_name = attrs.get("list_name")
+        list_name = list(set(list_name))
+        for name in list_name:
+            if Drug.objects.filter(name=name).exists():
+                raise serializers.ValidationError(f'{name} exists in the inventory')
+        return list_name
+
+    def bulk_create(self):
+        first_category = Category.objects.all().order_by('created').first()
+        bucket = []
+        for name in self.validated_data:
+            bucket.append(Drug(name=name, category=first_category, price=1))
+        res = Drug.objects.bulk_create(bucket)
+        return DrugSerializers(res, many=True).data
+
+
+class SendMailPrescriptionSerializer(serializers.Serializer):
+    prescription_id = serializers.UUIDField()
+
+    @classmethod
+    def validate_prescription_id(cls, value):
+        try:
+            Prescription.objects.get(pk=value)
+            return value
+        except Prescription.DoesNotExist:
+            raise serializers.ValidationError('Prescription does not exist!')
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
