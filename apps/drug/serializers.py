@@ -104,8 +104,8 @@ class PrescriptionSerializer(serializers.ModelSerializer):
         bulk_sync(
             new_models=new_models,
             filters=filters,
-            fields=['drug', 'quantity', 'price_at_the_time', 'is_removed'],
-            key_fields=['drug'])
+            fields=['drug', 'prescription', 'quantity', 'price_at_the_time', 'is_removed'],
+            key_fields=['drug', 'prescription'])
 
     def to_representation(self, instance):
         self.fields['pharmacy'] = PharmacySerializer(read_only=True)

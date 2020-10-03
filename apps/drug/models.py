@@ -79,3 +79,6 @@ class PrescriptionDetail(TimeStampedModel, SoftDeletableModel):
     price_at_the_time = models.FloatField(default=0, validators=[
         MinValueValidator(0)
     ])
+
+    class Meta:
+        unique_together = ('prescription', 'drug')
