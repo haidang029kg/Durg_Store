@@ -1,8 +1,8 @@
-from bulk_sync import bulk_sync
 from django.db.models import Q
 from rest_framework import serializers
 
 from apps.drug.models import Drug, Category, Pharmacy, Prescription, PrescriptionDetail
+from apps.drug.services.custom_bulk_sync import custom_bulk_sync
 from apps.drug.signals import signal_update_or_create_prescription
 
 
@@ -101,11 +101,12 @@ class PrescriptionSerializer(serializers.ModelSerializer):
 
     @classmethod
     def _bulk_sync(cls, filters, new_models: [PrescriptionDetail]):
-        bulk_sync(
+        stats = custom_bulk_sync(
             new_models=new_models,
             filters=filters,
             fields=['drug', 'prescription', 'quantity', 'price_at_the_time', 'is_removed'],
             key_fields=['drug', 'prescription'])
+        print(stats)
 
     def to_representation(self, instance):
         self.fields['pharmacy'] = PharmacySerializer(read_only=True)

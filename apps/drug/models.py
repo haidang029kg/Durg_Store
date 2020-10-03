@@ -80,5 +80,7 @@ class PrescriptionDetail(TimeStampedModel, SoftDeletableModel):
         MinValueValidator(0)
     ])
 
+    all_objects = models.Manager()
+
     class Meta:
         unique_together = ('prescription', 'drug')
