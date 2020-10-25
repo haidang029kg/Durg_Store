@@ -1,10 +1,11 @@
 import uuid
 
+from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from model_utils.models import TimeStampedModel, SoftDeletableModel
 
-from apps.drug.config import STATUS
+from apps.drug.config import STATUS, IN_PROGRESS_KEY
 
 
 # Create your models here.
@@ -41,8 +42,33 @@ class Drug(TimeStampedModel, SoftDeletableModel):
         return name
 
 
+class WorkSpace(TimeStampedModel, SoftDeletableModel):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    name = models.TextField()
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        name = self.name if self.name else ""
+        return name
+
+
+class UserWorkSpace(TimeStampedModel, SoftDeletableModel):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    work_space = models.ForeignKey(WorkSpace, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('user', 'work_space')
+
+    def __str__(self):
+        user_name = self.user.username if self.user.username else ""
+        ws_name = self.work_space.name if self.work_space.name else ""
+        return f'{ws_name} --- {user_name}'
+
+
 class Pharmacy(TimeStampedModel, SoftDeletableModel):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    work_space = models.ForeignKey(WorkSpace, on_delete=models.CASCADE, null=True, default=None)
     name = models.CharField(max_length=128)
     address = models.CharField(max_length=256)
     phone = models.CharField(max_length=12)
@@ -59,8 +85,9 @@ class Pharmacy(TimeStampedModel, SoftDeletableModel):
 
 class Prescription(TimeStampedModel, SoftDeletableModel):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    work_space = models.ForeignKey(WorkSpace, on_delete=models.CASCADE, null=True, default=None)
     pharmacy = models.ForeignKey(Pharmacy, on_delete=models.CASCADE)
-    status = models.CharField(max_length=11, choices=STATUS, default=STATUS[0][0])
+    status = models.CharField(max_length=11, choices=STATUS, default=IN_PROGRESS_KEY)
     note = models.TextField(null=True)
     name = models.CharField(max_length=20, null=True, default=None)
 
@@ -79,8 +106,6 @@ class PrescriptionDetail(TimeStampedModel, SoftDeletableModel):
     price_at_the_time = models.FloatField(default=0, validators=[
         MinValueValidator(0)
     ])
-
-    all_objects = models.Manager()
 
     class Meta:
         unique_together = ('prescription', 'drug')
