@@ -4,7 +4,7 @@ from itertools import groupby
 from rest_framework import serializers
 
 from apps.common.logger import logger
-from apps.drug.models import Pharmacy, Prescription
+from apps.drug.models import Pharmacy, Prescription, WorkSpace
 from apps.drug.services.calc_bins_from_range_time import (
     BIN_DAYS, BIN_MONTHS, BIN_YEARS, CalculateBinsFromRangeTimeService)
 from apps.drug.services.calc_total_price_time_unit import (
@@ -73,10 +73,10 @@ class PharmaciesPrescriptionStatisticSerializer(serializers.Serializer):
     def create(self, validated_data):
         pass
 
-    def get_stats(self):
+    def get_stats(self, work_space: WorkSpace):
         try:
-            ins_first = Prescription.objects.all().order_by('created').first()
-            ins_last = Prescription.objects.all().order_by('-created').first()
+            ins_first = Prescription.objects.filter(work_space=work_space).order_by('created').first()
+            ins_last = Prescription.objects.filter(work_space=work_space).order_by('-created').first()
 
             from_date = ins_first.created
             to_date = ins_last.created
@@ -84,7 +84,7 @@ class PharmaciesPrescriptionStatisticSerializer(serializers.Serializer):
             if self.validated_data.get('type') == BIN_DAYS:
                 from_date = to_date - timedelta(days=15)
 
-            pharmacy_ids = Pharmacy.objects.all().values_list('id', flat=True)
+            pharmacy_ids = Pharmacy.objects.filter(work_space=work_space).values_list('id', flat=True)
             pharmacy_ids = [str(item) for item in pharmacy_ids]
 
             stats_handler = CalculatePriceByTimeUnitForPharmacies(pharmacy_ids,
