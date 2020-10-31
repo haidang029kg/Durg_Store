@@ -54,7 +54,7 @@ class WorkSpaceSerializer(serializers.ModelSerializer):
 class PharmacySerializer(serializers.ModelSerializer):
     class Meta:
         model = Pharmacy
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'work_space']
         exclude = ['is_removed']
 
     def create(self, validated_data):
@@ -89,7 +89,7 @@ class PrescriptionDrugContentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Prescription
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'work_space']
         exclude = ['is_removed']
 
     def create(self, validated_data):
