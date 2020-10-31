@@ -68,7 +68,7 @@ class UserWorkSpace(TimeStampedModel, SoftDeletableModel):
 
 class Pharmacy(TimeStampedModel, SoftDeletableModel):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
-    work_space = models.ForeignKey(WorkSpace, on_delete=models.CASCADE, null=True, default=None)
+    work_space = models.ForeignKey(WorkSpace, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
     address = models.CharField(max_length=256)
     phone = models.CharField(max_length=12)
@@ -85,7 +85,7 @@ class Pharmacy(TimeStampedModel, SoftDeletableModel):
 
 class Prescription(TimeStampedModel, SoftDeletableModel):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
-    work_space = models.ForeignKey(WorkSpace, on_delete=models.CASCADE, null=True, default=None)
+    work_space = models.ForeignKey(WorkSpace, on_delete=models.CASCADE)
     pharmacy = models.ForeignKey(Pharmacy, on_delete=models.CASCADE)
     status = models.CharField(max_length=11, choices=STATUS, default=IN_PROGRESS_KEY)
     note = models.TextField(null=True)
