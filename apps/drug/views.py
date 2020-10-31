@@ -1,7 +1,6 @@
 from abc import ABC
 from datetime import datetime
 
-from django.contrib.auth.models import User
 from django.db.models import Q
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -24,18 +23,19 @@ from apps.drug.services.search import PostgresFulltextSearch, CONFIG_PRESCRIPTIO
 
 class WorkSpaceParamView(ABC):
 
-    @classmethod
-    def get_work_space(cls, ws_id, user: User):
+    def get_work_space(self, ws_id):
         try:
+            user = self.request.user  # noqa
             work_space = WorkSpace.objects.get(id=ws_id)
             UserWorkSpace.objects.get(work_space=work_space, user=user)
             return work_space
-        except WorkSpace.DoesNotExist:
+        except WorkSpace.DoesNotExist or UserWorkSpace.DoesNotExist:
             raise generics.ValidationError(f"Work Space {ws_id} does not exist")
 
 
 class ListCreateDrugView(generics.ListCreateAPIView):
     permission_classes = (IsAuthenticated,)
+    queryset = Drug.objects.all()
 
     keyword = openapi.Parameter('keyword', in_=openapi.IN_QUERY,
                                 description="""Search by name, condition""",
@@ -93,7 +93,7 @@ class RetrieveUpdateDestroyDrugView(generics.RetrieveUpdateDestroyAPIView):
 
 class ListCreateDrugCategoryView(generics.ListCreateAPIView):
     serializer_class = DrugCategorySerializer
-    queryset = Category.objects.all().order_by('name')
+    queryset = Category.objects.all()
     permission_classes = (IsAuthenticated,)
 
     keyword = openapi.Parameter('keyword', in_=openapi.IN_QUERY,
@@ -106,7 +106,6 @@ class ListCreateDrugCategoryView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         keyword = self.request.query_params.get('keyword', None)
-
         if keyword:
             return Category.objects.filter(name__icontains=keyword).order_by('-created')
         return Category.objects.all().order_by('-created')
@@ -120,6 +119,7 @@ class RetrieveUpdateCategoryView(generics.RetrieveUpdateAPIView):
 
 class ListCreatePharmacyView(WorkSpaceParamView, generics.ListCreateAPIView):
     permission_classes = (IsAuthenticated,)
+    queryset = Pharmacy.objects.all()
     keyword = openapi.Parameter('keyword', in_=openapi.IN_QUERY,
                                 description="""Search by name""",
                                 type=openapi.TYPE_STRING)
@@ -130,7 +130,7 @@ class ListCreatePharmacyView(WorkSpaceParamView, generics.ListCreateAPIView):
 
     def get_queryset(self):
         keyword = self.request.query_params.get('keyword', None)
-        ws = self.get_work_space(self.request.kwargs.get('word_space_id'), self.request.user)
+        ws = self.get_work_space(self.kwargs.get('work_space_id'))
         base_cond = Q(work_space=ws)
         if keyword:
             return Pharmacy.objects.filter(base_cond).filter(name__icontains=keyword).order_by('-created')
@@ -140,19 +140,6 @@ class ListCreatePharmacyView(WorkSpaceParamView, generics.ListCreateAPIView):
         if self.request.method == "POST":
             return PharmacySerializer
         return PharmacyDetailSerializer
-
-    def get_serializer_context(self):
-        """
-        Extra context provided to the serializer class.
-        """
-        if self.request.method in SAFE_METHODS:
-            return super().get_serializer_context()
-        return {
-            'request': self.request,
-            'format': self.format_kwarg,
-            'view': self,
-            'work_space': self.get_work_space(self.kwargs.get("work_space_id"), self.request.user)
-        }
 
 
 class RetrieveUpdatePharmacyView(WorkSpaceParamView, generics.RetrieveUpdateAPIView):
@@ -165,7 +152,7 @@ class RetrieveUpdatePharmacyView(WorkSpaceParamView, generics.RetrieveUpdateAPIV
         return PharmacySerializer
 
     def get_object(self):
-        ws = self.get_work_space(self.kwargs.get("work_space_id"), self.request.user)
+        ws = self.get_work_space(self.kwargs.get("work_space_id"))
         try:
             return Pharmacy.objects.get(work_space=ws, id=self.kwargs.get("pk"))
         except Pharmacy.DoesNotExist:
@@ -174,6 +161,7 @@ class RetrieveUpdatePharmacyView(WorkSpaceParamView, generics.RetrieveUpdateAPIV
 
 class ListCreatePrescriptionView(WorkSpaceParamView, generics.ListCreateAPIView):
     permission_classes = (IsAuthenticated,)
+    queryset = Prescription.objects.all()
 
     date = openapi.Parameter('date', in_=openapi.IN_QUERY,
                              description="""Search by date created with format %Y-%m-%d""",
@@ -187,7 +175,7 @@ class ListCreatePrescriptionView(WorkSpaceParamView, generics.ListCreateAPIView)
         return super(ListCreatePrescriptionView, self).get(request, *args, **kwargs)
 
     def get_queryset(self):
-        ws = self.get_work_space(self.kwargs.get("work_space_id"), self.request.user)
+        ws = self.get_work_space(self.kwargs.get("work_space_id"))
 
         date = self.request.GET.get('date', None)
         keyword = self.request.query_params.get('keyword', None)
@@ -215,36 +203,24 @@ class ListCreatePrescriptionView(WorkSpaceParamView, generics.ListCreateAPIView)
         return query_set.order_by('-created')
 
     def get_serializer_class(self):
-        if self.request.method == 'POST':
-            return PrescriptionDrugContentSerializer
-        return PrescriptionDetailSerializer
-
-    def get_serializer_context(self):
-        """
-        Extra context provided to the serializer class.
-        """
         if self.request.method in SAFE_METHODS:
-            return super().get_serializer_context()
-        return {
-            'request': self.request,
-            'format': self.format_kwarg,
-            'view': self,
-            'work_space': self.get_work_space(self.kwargs.get("work_space_id"), self.request.user)
-        }
+            return PrescriptionDetailSerializer
+        return PrescriptionDrugContentSerializer
 
 
 class RetrieveDestroyPrescriptionView(WorkSpaceParamView, generics.RetrieveDestroyAPIView):
     permission_classes = (IsAuthenticated,)
+    queryset = Prescription.objects.all()
 
     def get_serializer_class(self):
-        if self.request.method == "GET":
+        if self.request.method in SAFE_METHODS:
             return PrescriptionDetailSerializer
         return PrescriptionUpdateDetailSerializer
 
     def get_object(self):
-        ws = self.get_work_space(self.kwargs.get("work_space_id"), self.request.user)
+        ws = self.get_work_space(self.kwargs.get("work_space_id"))
         try:
-            return Prescription.objects.filter(work_space=ws, id=self.kwargs.get("pk"))
+            return Prescription.objects.get(work_space=ws, id=self.kwargs.get("pk"))
         except Prescription.DoesNotExist:
             raise generics.ValidationError(f"Prescription {self.kwargs.get('pk')} does not exist")
 
@@ -252,14 +228,10 @@ class RetrieveDestroyPrescriptionView(WorkSpaceParamView, generics.RetrieveDestr
 class PrescriptionDrugContentDetailView(WorkSpaceParamView, generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = PrescriptionDrugContentDetailSerializer
+    queryset = Prescription.objects.all()
 
     def get_queryset(self):
-        ws = self.get_work_space(self.kwargs.get("work_space_id"), self.request.user)
         pk = self.kwargs.get('pk', None)
-        try:
-            _ = Prescription.objects.filter(id=pk, work_space=ws)
-        except Prescription.DoesNotExist:
-            raise generics.ValidationError(f"Prescription {pk} does not exist.")
 
         key_sort = None
 
@@ -283,14 +255,15 @@ class PrescriptionDrugContentDetailView(WorkSpaceParamView, generics.ListAPIView
 class PrescriptionDrugContentUpdateView(WorkSpaceParamView, generics.UpdateAPIView):
     serializer_class = PrescriptionDrugContentSerializer
     permission_classes = (IsAuthenticated,)
+    queryset = Prescription.objects.all()
 
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
 
     def get_object(self):
-        ws = self.get_work_space(self.kwargs.get("work_space_id"), self.request.user)
+        ws = self.get_work_space(self.kwargs.get("work_space_id"))
         try:
-            return Prescription.objects.filter(work_space=ws, id=self.kwargs.get("pk"))
+            return Prescription.objects.get(work_space=ws, id=self.kwargs.get("pk"))
         except Prescription.DoesNotExist:
             raise generics.ValidationError(f"Prescription {self.kwargs.get('pk')} does not exist.")
 

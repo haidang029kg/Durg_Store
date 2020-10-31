@@ -58,8 +58,9 @@ class PharmacySerializer(serializers.ModelSerializer):
         exclude = ['is_removed']
 
     def create(self, validated_data):
-        work_space = self.context.get('work_space')
-        validated_data.update({"work_space": work_space})
+        view = self.context.get('view')
+        ws = view.get_work_space(view.kwargs.get('work_space_id'))
+        validated_data.update({"work_space": ws})
         return super(PharmacySerializer, self).create(validated_data)
 
 
@@ -92,6 +93,9 @@ class PrescriptionDrugContentSerializer(serializers.ModelSerializer):
         exclude = ['is_removed']
 
     def create(self, validated_data):
+        view = self.context.get('view')
+        ws = view.get_work_space(view.kwargs.get('work_space_id'))
+        validated_data.update({"work_space": ws})
         list_prescription_detail_data = validated_data.pop('list_prescription_detail')
         prescription = Prescription.objects.create(**validated_data)
         list_prescription_detail_models = []
