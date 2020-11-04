@@ -167,7 +167,7 @@ SWAGGER_SETTINGS = {
 
 JWT_AUTH = {
     'JWT_ALLOW_REFRESH': True,
-    'JWT_EXPIRATION_DELTA': timedelta(minutes=30),
+    'JWT_EXPIRATION_DELTA': timedelta(hours=2),
     'JWT_REFRESH_EXPIRATION_DELTA': timedelta(days=7),
     'JWT_RESPONSE_PAYLOAD_HANDLER': 'apps.common.custom_jwt_response_handler.jwt_response_payload_handler'
 }
