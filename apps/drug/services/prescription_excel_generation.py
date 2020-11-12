@@ -1,29 +1,17 @@
 from datetime import datetime
 
 import xlsxwriter
-from django.conf import settings
-from django.core.mail import EmailMessage
 
 from apps.drug.models import Prescription, PrescriptionDetail
 
 
-class EmailService:
-
-    @staticmethod
-    def send_email(subject, msg_html, recipient_list):
-        email_from = settings.DJANGO_DEFAULT_FROM_EMAIL
-        msg = EmailMessage(subject=subject, body=msg_html, from_email=email_from, to=recipient_list)
-        msg.content_subtype = "html"  # Main content is now text/html
-        msg.send()
-
-
-class SendMailExcelPrescription:
+class PrescriptionExcelGeneration:
 
     def __init__(self, prescription_id: str):
         self.__prescription = Prescription.objects.get(id=prescription_id)
         assert self.__prescription.pharmacy.email is not None, "Pharmacy email is not None"
         self.__data = PrescriptionDetail.objects.filter(prescription=self.__prescription)
-        self.__path = './bucket/{}-{}.xlsx'.format(self.__prescription.pharmacy.name,
+        self.__path = './file_bucket/{}-{}.xlsx'.format(self.__prescription.pharmacy.name,
                                                    datetime.now().date())
 
     def xlsx(self):

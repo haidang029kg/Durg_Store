@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ subject }}</title>
+</head>
+<body>
+{% block greeting %}
+<p>Hi {{ receiver_name }},</p>
+{% endblock greeting %}
+{% block content %}
+{% endblock content %}
+{% block thanks %}
+<p>
+    Thank you,
+    <br/>
+    The {{ team_name }} Team
+</p>
+{% endblock thanks %}
+</body>
+</html>
