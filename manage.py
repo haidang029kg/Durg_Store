@@ -8,14 +8,12 @@ import environ
 env = environ.Env()
 env.read_env()
 
-ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
-
 DJANGO_SETTINGS_MODULE = env.str('DJANGO_SETTINGS_MODULE')
 
 
 def main():
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', DJANGO_SETTINGS_MODULE)
     try:
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', DJANGO_SETTINGS_MODULE)
         from django.core.management import execute_from_command_line
     except ImportError as exc:
         raise ImportError(

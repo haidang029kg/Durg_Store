@@ -13,10 +13,16 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 import os
 from datetime import timedelta
 
-from manage import env, ROOT_DIR
+import environ
+
+from config.settings._logging import *  # noqa
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = environ.Path(__file__) - 3
+
+env = environ.Env()
+env.read_env(ROOT_DIR('.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
@@ -33,6 +39,7 @@ FRONT_END_URI = env.str('FRONT_END_URI')
 
 DJANGO_APPS = [
     'apps.drug.apps.DrugConfig',
+    'apps.authentication.apps.AuthenticationConfig',
 ]
 
 # Application definition
@@ -68,10 +75,11 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 
+TEMPLATES_ROOT = str(ROOT_DIR('templates'))
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [TEMPLATES_ROOT],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -148,7 +156,6 @@ REST_FRAMEWORK = {
 CORS_ORIGIN_WHITELIST = [
     "http://localhost:4200",
     "http://localhost:443",
-    "http://localhost",
     FRONT_END_URI
 ]
 

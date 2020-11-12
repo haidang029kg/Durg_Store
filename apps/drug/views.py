@@ -2,6 +2,7 @@ from abc import ABC
 from datetime import datetime
 
 from django.db.models import Q
+from django.http import HttpResponse
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics
@@ -16,6 +17,7 @@ from apps.drug.serializers import (
     SendMailPrescriptionSerializer, BulkCreateDrugSerializer, PharmacyDetailSerializer,
     PrescriptionUpdateDetailSerializer, PrescriptionDrugContentSerializer, DrugDetailSerializer,
     PrescriptionDrugContentDetailSerializer)
+from apps.drug.services.prescription_pdf_generation import PrescriptionPdfGeneration
 from apps.drug.services.search import PostgresFulltextSearch, CONFIG_PRESCRIPTION_RANK, CONFIG_DRUG_RANK
 
 
@@ -287,3 +289,12 @@ class SendMailPrescriptionView(APIView):
         serializer = SendMailPrescriptionSerializer(data={"prescription_id": prescription_id})
         serializer.is_valid(raise_exception=True)
         return Response({})
+
+
+class GetPrescriptionPdfView(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request, *args, **kwargs):
+        pres_inst = Prescription.objects.get(id=self.kwargs.get('pk'))
+        pdf = PrescriptionPdfGeneration(pres_inst).generate()
+        return HttpResponse(pdf, content_type='application/pdf')

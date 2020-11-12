@@ -16,3 +16,5 @@ django-bulk-sync==2.1.0
 whitenoise  # https://github.com/evansd/whitenoise
 
 djangorestframework-jwt==1.11.0
+
+xhtml2pdf==0.2.5

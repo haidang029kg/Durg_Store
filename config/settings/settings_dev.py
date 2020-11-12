@@ -1,4 +1,3 @@
-from config.settings.settings_base_log import *
 from config.settings.settings_base import *
 
 # DEBUG

@@ -4,7 +4,7 @@ from apps.drug.views import (
     ListCreateDrugView, RetrieveUpdateDestroyDrugView, ListCreateDrugCategoryView, ListCreatePharmacyView,
     ListCreatePrescriptionView, RetrieveUpdateCategoryView, RetrieveUpdatePharmacyView, BulkCreateActionDrugView,
     PrescriptionDrugContentDetailView, PrescriptionDrugContentUpdateView,
-    RetrieveDestroyPrescriptionView, SendMailPrescriptionView)
+    RetrieveDestroyPrescriptionView, SendMailPrescriptionView, GetPrescriptionPdfView)
 from apps.drug.views_statistic import (
     PharmacyPrescriptionStatisticView, CommonPrescriptionStatsView, PharmaciesPrescriptionStatisticView)
 
@@ -48,6 +48,9 @@ urlpatterns = [
          name='retrieve-update-destroy-prescription'),
     path('work-spaces/<uuid:work_space_id>/prescription/<uuid:pk>/detail/',
          PrescriptionDrugContentDetailView.as_view(),
+         name='list-prescription-drug-detail'),
+    path('work-spaces/<uuid:work_space_id>/prescription/<uuid:pk>/pdf/',
+         GetPrescriptionPdfView.as_view(),
          name='list-prescription-drug-detail'),
     path('work-spaces/<uuid:work_space_id>/prescription/<uuid:pk>/detail/changes/',
          PrescriptionDrugContentUpdateView.as_view(),
